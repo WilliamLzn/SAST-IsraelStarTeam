@@ -9,7 +9,9 @@ $envFile = Join-Path -Path $PSScriptRoot -ChildPath ".env"
 if (Test-Path $envFile) {
     Get-Content $envFile | ForEach-Object {
         if ($_ -match "^([^=]+)=(.*)$") {
-            $env:$Matches[1] = $Matches[2]
+            $envVarName = $Matches[1]
+            $envVarValue = $Matches[2]
+            Set-Item -Path "Env:\$envVarName" -Value $envVarValue
         }
     }
 }
