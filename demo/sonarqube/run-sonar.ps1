@@ -27,12 +27,18 @@ if (-not $env:SONAR_TOKEN -or $env:SONAR_TOKEN -eq "tu_token_de_sonar_aqui") {
     exit 1
 }
 
-# Validar que exista la carpeta de NodeGoat (clonada por el usuario)
-$nodegoatPath = Join-Path -Path $PSScriptRoot -ChildPath "nodegoat"
-if (-not (Test-Path $nodegoatPath)) {
-    Write-Host "ERROR: No se encontró la carpeta nodegoat en $nodegoatPath" -ForegroundColor Red
+# Validar que exista la carpeta de NodeGoat (acepta nodegoat o NodeGoat)
+$nodegoatPathLower = Join-Path -Path $PSScriptRoot -ChildPath "nodegoat"
+$nodegoatPathUpper = Join-Path -Path $PSScriptRoot -ChildPath "NodeGoat"
+
+if (Test-Path $nodegoatPathUpper) {
+    $nodegoatPath = $nodegoatPathUpper
+} elseif (Test-Path $nodegoatPathLower) {
+    $nodegoatPath = $nodegoatPathLower
+} else {
+    Write-Host "ERROR: No se encontró la carpeta NodeGoat en $PSScriptRoot" -ForegroundColor Red
     Write-Host "PASO PREVIO OBLIGATORIO: clona OWASP NodeGoat dentro de demo/sonarqube:" -ForegroundColor Yellow
-    Write-Host "  git clone https://github.com/OWASP/NodeGoat.git demo/sonarqube/nodegoat" -ForegroundColor Cyan
+    Write-Host "  git clone https://github.com/OWASP/NodeGoat.git NodeGoat" -ForegroundColor Cyan
     exit 1
 }
 
@@ -45,12 +51,17 @@ if (-not (Test-Path $sonarScanner)) {
     exit 1
 }
 
-# Construir argumentos con ruta absoluta a nodegoat
+# Construir argumentos con ruta absoluta a NodeGoat y SCM deshabilitado
 $argumentos = @(
     "-Dsonar.projectKey=$env:SONAR_PROJECT_KEY",
     "-Dsonar.sources=$nodegoatPath",
     "-Dsonar.host.url=$env:SONAR_HOST_URL",
-    "-Dsonar.token=$env:SONAR_TOKEN"
+    "-Dsonar.token=$env:SONAR_TOKEN",
+    "-Dsonar.scm.disabled=true",
+    "-Dsonar.sourceEncoding=UTF-8",
+    "-Dsonar.language=js",
+    "-Dsonar.inclusions=**/*.js,**/*.jsx,**/*.json",
+    "-Dsonar.exclusions=node_modules/**,.git/**,public/**,test/**,coverage/**,logs/**"
 )
 
 Write-Host "=== Iniciando análisis de SonarQube sobre OWASP NodeGoat ===" -ForegroundColor Cyan
@@ -65,7 +76,7 @@ Write-Host ""
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "=== Análisis completado con éxito ===" -ForegroundColor Green
-    Write-Host "Revisa los resultados en: http://localhost:9000" -ForegroundColor Green
+    Write-Host "Revisa los resultados en: http://localhost:9000/dashboard?id=$env:SONAR_PROJECT_KEY" -ForegroundColor Green
 } else {
     Write-Host ""
     Write-Host "=== El análisis finalizó con errores ===" -ForegroundColor Red
