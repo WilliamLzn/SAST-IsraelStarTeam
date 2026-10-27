@@ -4,6 +4,9 @@
 # Rama: demo/sonarqube
 # ============================================
 
+# Nota: en PowerShell de Windows ejecuta primero: chcp 65001
+# para evitar problemas con caracteres especiales (á, é, í, ó, ú, ñ)
+
 # Cargar variables de entorno desde .env si existe
 $envFile = Join-Path -Path $PSScriptRoot -ChildPath ".env"
 if (Test-Path $envFile) {
@@ -41,17 +44,21 @@ if (-not (Test-Path $sonarScanner)) {
     exit 1
 }
 
+# Construir argumentos como array para evitar problemas de parsing en PowerShell
+$argumentos = @(
+    "-Dsonar.projectKey=$env:SONAR_PROJECT_KEY",
+    "-Dsonar.sources=./nodegoat",
+    "-Dsonar.host.url=$env:SONAR_HOST_URL",
+    "-Dsonar.login=$env:SONAR_TOKEN"
+)
+
 Write-Host "=== Iniciando análisis de SonarQube sobre OWASP NodeGoat ===" -ForegroundColor Cyan
 Write-Host "Proyecto: $env:SONAR_PROJECT_KEY" -ForegroundColor Cyan
 Write-Host "Host: $env:SONAR_HOST_URL" -ForegroundColor Cyan
 Write-Host ""
 
-# Ejecutar SonarScanner
-& $sonarScanner `
-  -Dsonar.projectKey=$env:SONAR_PROJECT_KEY `
-  -Dsonar.sources=./nodegoat `
-  -Dsonar.host.url=$env:SONAR_HOST_URL `
-  -Dsonar.login=$env:SONAR_TOKEN
+# Ejecutar SonarScanner con splatting
+& $sonarScanner @argumentos
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
