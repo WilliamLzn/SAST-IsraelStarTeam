@@ -4,8 +4,9 @@
 # Rama: demo/sonarqube
 # ============================================
 
-# Nota: en PowerShell de Windows ejecuta primero: chcp 65001
-# para evitar problemas con caracteres especiales (á, é, í, ó, ú, ñ)
+# Forzar codificación UTF-8 en la consola para evitar caracteres extraños (á, é, í, ó, ú, ñ)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+[Console]::InputEncoding = [System.Text.UTF8Encoding]::new()
 
 # Cargar variables de entorno desde .env si existe
 $envFile = Join-Path -Path $PSScriptRoot -ChildPath ".env"
@@ -26,12 +27,12 @@ if (-not $env:SONAR_TOKEN -or $env:SONAR_TOKEN -eq "tu_token_de_sonar_aqui") {
     exit 1
 }
 
-# Validar que exista la carpeta de NodeGoat
+# Validar que exista la carpeta de NodeGoat (clonada por el usuario)
 $nodegoatPath = Join-Path -Path $PSScriptRoot -ChildPath "nodegoat"
 if (-not (Test-Path $nodegoatPath)) {
     Write-Host "ERROR: No se encontró la carpeta nodegoat en $nodegoatPath" -ForegroundColor Red
-    Write-Host "Clona OWASP NodeGoat antes de ejecutar:" -ForegroundColor Yellow
-    Write-Host "  git clone https://github.com/OWASP/NodeGoat.git nodegoat" -ForegroundColor Cyan
+    Write-Host "PASO PREVIO OBLIGATORIO: clona OWASP NodeGoat dentro de demo/sonarqube:" -ForegroundColor Yellow
+    Write-Host "  git clone https://github.com/OWASP/NodeGoat.git demo/sonarqube/nodegoat" -ForegroundColor Cyan
     exit 1
 }
 
@@ -44,17 +45,18 @@ if (-not (Test-Path $sonarScanner)) {
     exit 1
 }
 
-# Construir argumentos como array para evitar problemas de parsing en PowerShell
+# Construir argumentos con ruta absoluta a nodegoat
 $argumentos = @(
     "-Dsonar.projectKey=$env:SONAR_PROJECT_KEY",
-    "-Dsonar.sources=./nodegoat",
+    "-Dsonar.sources=$nodegoatPath",
     "-Dsonar.host.url=$env:SONAR_HOST_URL",
-    "-Dsonar.login=$env:SONAR_TOKEN"
+    "-Dsonar.token=$env:SONAR_TOKEN"
 )
 
 Write-Host "=== Iniciando análisis de SonarQube sobre OWASP NodeGoat ===" -ForegroundColor Cyan
 Write-Host "Proyecto: $env:SONAR_PROJECT_KEY" -ForegroundColor Cyan
 Write-Host "Host: $env:SONAR_HOST_URL" -ForegroundColor Cyan
+Write-Host "Fuentes: $nodegoatPath" -ForegroundColor Cyan
 Write-Host ""
 
 # Ejecutar SonarScanner con splatting
